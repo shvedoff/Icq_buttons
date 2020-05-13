@@ -1,36 +1,37 @@
 import json
 import time
 import string
+import logging
 from bot.bot import Bot
 from bot.handler import MessageHandler, BotButtonCommandHandler
+from bot.filter import Filter
 from random import randrange, choice, random
-
 default_markup = [
-    [{"text": "Все действия с кнопками", "callbackData": "all_types"}],
+    [{"text": "Все действия с кнопками", "callbackData": "types"}],
     [{"text": "Маленькие кнопки", "callbackData": "8x1"}],
     [{"text": "Все типы медиа", "callbackData": "all_media"}],
     [{"text": "Длинный текст в кнопке", "callbackData": "all_long"}],
     [{"text": "С переносом строки", "callbackData": "newline"}],
-    [{"text": "Своя конфигурация", "callbackData": "custom"}],
+    [{"text": "Своя конфигурация", "callbackData": "custom_intro"}],
     [{"text": "Сообщение, которое можно отредактировать",
-        "callbackData": "redact"}],
+        "callbackData": "edit_intro"}],
     [{"text": "Все типы стилей", "callbackData": "styles"}],
     [{"text": "Рандом...", "callbackData": "rand"}],
 ]
-redact = ('Жми!', [[{"text": "Жми!", "callbackData": "edit"}]])
+edit_text = ('Жми!', [[{"text": "Жми!", "callbackData": "edit"}]])
 
-styles = ('Все типы стилей', [
+styles_all = ('Все типы стилей', [
     [{"text": "primary style", "callbackData": "nothing", "style": "primary"}],
     [{"text": "attention style", "callbackData": "nothing",
         "style": "attention"}],
     [{"text": "base style", "callbackData": "nothing", "style": "base"}],
 ])
 
-custom = 'Напиши текст в формате: AxB text, чтобы получить сетку кнопок \
+custom_intro_text = 'Напиши текст в формате: AxB text, чтобы получить сетку кнопок \
 размера A на B c тектом text. Пример: 2x3 привет '
 
-all_types = ('Все типы кнопок', [
-    [{"text": "Callback: Nothing", "callbackData": "nothing"}],
+all_types_answer = ('Все типы кнопок', [
+    [{"text": "Callback: Nothing", "callbackData": "no_callback"}],
     [{"text": "Callback: Toast", "callbackData": "toast"}],
     [{"text": "Callback: Alert", "callbackData": "alert"}],
     [{"text": "Callback: Url", "callbackData": "url"}],
@@ -39,13 +40,13 @@ all_types = ('Все типы кнопок', [
     [{"text": "Only Url", "url": "http://mail.ru"}],
 ])
 
-newline = ("С переносом строки", [
+newline_text = ("С переносом строки", [
     [{"text": "Hello", "callbackData": "nothing"},
      {"text": "hello\nolleh", "callbackData": "nothing"},
      {"text": "Привет", "callbackData": "nothing"}]
 ])
 
-types = {
+types_list = {
     "text": "текст",
     "longtext": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed  \
     do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad  \
@@ -69,7 +70,120 @@ labore et dolore magna aliqua.", "callbackData": "nothing"}]]
 text_on_button_markup = [[{"text": "Lorem", "callbackData": "nothing"}]]
 
 
-def all(callback):
+def sender(bot, chat_id=None, query_id=None, markup=None, message='', text='', alert=False, url='', separate_message=''):
+    logging.info(f'Invoked sender with args: {locals()}')
+    if separate_message:
+        bot.send_text(chat_id=chat_id,
+                      text=separate_message)
+    if markup:
+        bot.send_text(chat_id=chat_id,
+                      text=message,
+                      inline_keyboard_markup=json.dumps(markup))
+    if query_id:
+        bot.answer_callback_query(
+            query_id=query_id,
+            text=text,
+            show_alert=alert,
+            url=url)
+
+
+def toast(bot, event):
+    sender(bot, chat_id=event.data['message']['chat']['chatId'], query_id=event.data['queryId'],
+           text='toast',  separate_message='toast pressed',
+           )
+
+
+def alert(bot, event):
+    sender(bot, chat_id=event.data['message']['chat']['chatId'], query_id=event.data['queryId'],
+           text='alert', alert=True, separate_message='alert pressed',
+           )
+
+
+def url(bot, event):
+    sender(bot, chat_id=event.data['message']['chat']['chatId'], query_id=event.data['queryId'],
+           url='http://mail.ru', separate_message='url pressed',
+           )
+
+
+def alert_url(bot, event):
+    sender(bot, chat_id=event.data['message']['chat']['chatId'], query_id=event.data['queryId'],
+           url='http://mail.ru', alert='true', separate_message='all_types pressed',
+           )
+
+
+def toast_url(bot, event):
+    sender(bot, chat_id=event.data['message']['chat']['chatId'], query_id=event.data['queryId'],
+           text='Toast', url='http://mail.ru', separate_message='all_types pressed',
+           )
+
+
+def types(bot, event):
+    sender(bot, chat_id=event.data['message']['chat']['chatId'], query_id=event.data['queryId'],
+           message=all_types_answer[0], markup=all_types_answer[1], separate_message='all_types pressed',
+           )
+
+
+def styles(bot, event):
+    sender(bot, chat_id=event.data['message']['chat']['chatId'], query_id=event.data['queryId'],
+           message=styles_all[0], markup=styles_all[1], separate_message='styles_all pressed',
+           )
+
+
+def newline(bot, event):
+    sender(bot, chat_id=event.data['message']['chat']['chatId'], query_id=event.data['queryId'],
+           message=newline_text[0], markup=newline_text[1], separate_message='newline pressed.',
+           )
+
+
+def custom_intro(bot, event):
+    sender(bot, chat_id=event.data['message']['chat']['chatId'], query_id=event.data['queryId'],
+           separate_message=custom_intro_text)
+
+
+def edit_intro(bot, event):
+    sender(bot, chat_id=event.data['message']['chat']['chatId'], query_id=event.data['queryId'],
+           message=edit_text[0], markup=edit_text[1], separate_message='edit_intro pressed.',
+           )
+
+
+def edit(bot, event):
+    text = "Отредактировано!"+str(time.time())
+    markup = [[{'text': "Отредактировано!", 'callbackData': "nothing"}]]
+    bot.edit_text(chat_id=event.data['message']['chat']['chatId'],
+                  msg_id=event.data['message']['msgId'], text=text,
+                  inline_keyboard_markup=json.dumps(markup))
+
+    sender(bot, chat_id=event.data['message']['chat']
+           ['chatId'], query_id=event.data['queryId'])
+
+
+def get_answer_by_text(bot, event, text):
+    answer = 'Привет!'
+    markup = default_markup
+
+    if 'x' in text:
+        answer, markup = custom(bot, event, text)
+    return {'text': answer, 'markup': markup}
+
+
+def message_cb(bot, event):
+
+    answer_params = get_answer_by_text(bot, event, event.text)
+
+    bot.send_text(chat_id=event.from_chat, text=answer_params['text'],
+                  inline_keyboard_markup=json.dumps(answer_params['markup']))
+
+
+def nothing(bot, event):
+    sender(bot, chat_id=event.data['message']['chat']['chatId'], query_id=event.data['queryId'],
+           separate_message='nothing pressed')
+
+
+def all(bot, event):
+    callback = event.data['callbackData']
+    sender(bot, chat_id=event.data['message']['chat']
+           ['chatId'], separate_message=f'{callback} pressed',)
+
     postfix = callback[4:]
     info_on_callback = postfix.split('_')
     reply = []
@@ -83,38 +197,38 @@ def all(callback):
     if len(info_on_callback) == 1:
         buttons = [
             [{"text": 'Все', "callbackData": callback_for_buttons+"all"}]]
-        for key in types.keys():
+        for key in types_list.keys():
             buttons.append(
                 [{"text": key, "callbackData": callback_for_buttons+key}])
+        reply.append({'text': 'есть такие:', 'markup': buttons})
     else:
-
         if info_on_callback[1] == 'all':
             reply = []
-            for type in types.keys():
-                reply.append({'text': types[type],'markup': button,
-                    'alert': False,'url': ''})
+            for type in types_list.keys():
+                reply.append({'text': types_list[type], 'markup': button,
+                              'alert': False, 'url': ''})
         else:
 
-            reply = {'text': types[info_on_callback[1]],'markup': button,
-                'alert': False,'url': ''}
+            reply.append({'text': types_list[info_on_callback[1]], 'markup': button,
+                          'alert': False, 'url': ''})
 
     if reply:
-        return reply
-    return {'alert': False, 'text': "есть такие:", 'url': '', 'markup': buttons,
-     'message': "all media pressed."}
+        for part in reply:
+            sender(bot, chat_id=event.data['message']['chat']['chatId'], query_id=event.data['queryId'],
+                   markup=part['markup'], message=part['text'])
 
 
-def rand():
-    lines_count = randrange(14)
-    callback = []
+def rand(bot, event):
+    lines_count = randrange(13)+1
+    markup = []
 
     for i in range(lines_count):
-        colls_count = randrange(9)
+        colls_count = randrange(8)+1
         lines = []
         for j in range(colls_count):
             button = {}
             string_on_button = ''
-            for k in range(randrange(6)):
+            for k in range(randrange(6)+1):
                 lower_upper_alphabet = string.ascii_letters
                 string_on_button += choice(lower_upper_alphabet)
                 if random() > 0.8:
@@ -124,12 +238,13 @@ def rand():
             button['callbackData'] = "nothing"
             button['style'] = choice(["primary", "attention", "base"])
             lines.append(button)
-        callback.append(lines)
-    return {'alert': False, 'text': "Нарандомилось:", 'url': '',
-     'markup': callback, 'message': 'random pressed.'}
+        markup.append(lines)
+
+    sender(bot, chat_id=event.data['message']['chat']['chatId'], query_id=event.data['queryId'],
+           markup=markup, message="Нарандомилось:", separate_message='random pressed.')
 
 
-def custom(text):
+def custom(bot, event, text):
     text_on_buttons = "a"
     try:
         text = text.split(' ')
@@ -143,54 +258,38 @@ def custom(text):
     buttons = [
         [{'text': text_on_buttons, 'callbackData': "nothing"}]*first]*second
 
-
-    return "Small buttons", buttons
+    sender(bot, chat_id=event.from_chat,
+           markup=buttons, message="Своя конфигурация:", separate_message='custom entered.')
 
 
 class CollbackLogic:
-
-    def get_answer_by_callback(self, event):
-        callback = event.data['callbackData']
-        alert = False
-        url = ''
-        text = ''
-        message = f'{callback} pressed.'
-        markup = []
-
-        if 'alert' in callback:
-            alert = True
-        if 'url' in callback:
-            url = 'https://mail.ru'
-        if 'toast' in callback:
-            text = "Toast"
-        if 'edit' in callback:
-            text = "Отредактировано!"+str(time.time())
-            markup = [[{'text': "Отредачено!", 'callbackData': "nothing"}]]
-            return {'alert': alert, 'text': text, 'url': url,
-            'markup': markup, 'message': message, 'edit':True}
-
-        if 'all' in callback:
-            return all(callback)
-        if callback in globals():
-            if type(globals()[callback]) == tuple:
-                if type(globals()[callback][1]) == list:
-                    markup = globals()[callback][1]
-                    text = globals()[callback][0]
-            elif type(globals()[callback]) == str:
-                message = globals()[callback]
-            else:
-                return globals()[callback]()
-        if '8x1' in callback:
-            text, markup = custom(text)
-
-        return {'alert': alert, 'text': text, 'url': url, 'markup': markup,
-         'message': message}
-
-    def get_answer_by_text(self, text):
-
-        answer = 'Привет!'
-        markup = default_markup
-
-        if 'x' in text:
-            answer, markup = custom(text)
-        return {'text': answer, 'markup': markup}
+    def __init__(self, bot):
+        bot.dispatcher.add_handler(MessageHandler(callback=message_cb))
+        bot.dispatcher.add_handler(BotButtonCommandHandler(
+            callback=types, filters=Filter.callback_data("types")))
+        bot.dispatcher.add_handler(BotButtonCommandHandler(
+            callback=all, filters=Filter.callback_data_regexp("all.*")))
+        bot.dispatcher.add_handler(BotButtonCommandHandler(
+            callback=rand, filters=Filter.callback_data("rand")))
+        bot.dispatcher.add_handler(BotButtonCommandHandler(
+            callback=newline, filters=Filter.callback_data("newline")))
+        bot.dispatcher.add_handler(BotButtonCommandHandler(
+            callback=custom_intro, filters=Filter.callback_data("custom_intro")))
+        bot.dispatcher.add_handler(BotButtonCommandHandler(
+            callback=styles, filters=Filter.callback_data("styles")))
+        bot.dispatcher.add_handler(BotButtonCommandHandler(
+            callback=nothing, filters=Filter.callback_data("nothing")))
+        bot.dispatcher.add_handler(BotButtonCommandHandler(
+            callback=toast, filters=Filter.callback_data("toast")))
+        bot.dispatcher.add_handler(BotButtonCommandHandler(
+            callback=alert, filters=Filter.callback_data("alert")))
+        bot.dispatcher.add_handler(BotButtonCommandHandler(
+            callback=url, filters=Filter.callback_data("url")))
+        bot.dispatcher.add_handler(BotButtonCommandHandler(
+            callback=alert_url, filters=Filter.callback_data("alert_url")))
+        bot.dispatcher.add_handler(BotButtonCommandHandler(
+            callback=toast_url, filters=Filter.callback_data("toast_url")))
+        bot.dispatcher.add_handler(BotButtonCommandHandler(
+            callback=edit, filters=Filter.callback_data("edit")))
+        bot.dispatcher.add_handler(BotButtonCommandHandler(
+            callback=edit_intro, filters=Filter.callback_data("edit_intro")))
