@@ -8,7 +8,7 @@ from bot.filter import Filter
 from random import randrange, choice, random
 default_markup = [
     [{"text": "Все действия с кнопками", "callbackData": "types"}],
-    [{"text": "Маленькие кнопки", "callbackData": "8x1"}],
+    [{"text": "Маленькие кнопки", "callbackData": "micro_buttons"}],
     [{"text": "Все типы медиа", "callbackData": "all_media"}],
     [{"text": "Длинный текст в кнопке", "callbackData": "all_long"}],
     [{"text": "С переносом строки", "callbackData": "newline"}],
@@ -261,8 +261,14 @@ def custom(bot, event, text):
     sender(bot, chat_id=event.from_chat,
            markup=buttons, message="Своя конфигурация:", separate_message='custom entered.')
 
+def small_buttons(bot, event):
+    buttons = [
+        [{'text': 'a', 'callbackData': "nothing"}]*8]*1
+    sender(bot, chat_id=event.data['message']['chat']['chatId'],query_id=event.data['queryId'],
+           markup=buttons, message="Маленькие кнопки:", separate_message='small _buttons entered.')
 
-class CollbackLogic:
+
+class CallbackLogic:
     def __init__(self, bot):
         bot.dispatcher.add_handler(MessageHandler(callback=message_cb))
         bot.dispatcher.add_handler(BotButtonCommandHandler(
@@ -293,3 +299,5 @@ class CollbackLogic:
             callback=edit, filters=Filter.callback_data("edit")))
         bot.dispatcher.add_handler(BotButtonCommandHandler(
             callback=edit_intro, filters=Filter.callback_data("edit_intro")))
+        bot.dispatcher.add_handler(BotButtonCommandHandler(
+                callback=small_buttons, filters=Filter.callback_data("micro_buttons")))
