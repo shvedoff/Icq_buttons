@@ -266,7 +266,7 @@ def custom(bot, event, text):
             text_on_buttons = text[1]
         second = int(text[0][:text[0].find('x')])
         first = int(text[0][text[0].find('x')+1:])
-    except Error as e:
+    except Exception as e:
         logger.exception(e)
         first = 8
         second = 1
