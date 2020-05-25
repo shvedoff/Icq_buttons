@@ -1,7 +1,5 @@
-import json
 import logging
 from bot.bot import Bot
-from bot.handler import MessageHandler, BotButtonCommandHandler
 from buttons_logic import launch_handlers
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
